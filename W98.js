@@ -1,5 +1,5 @@
 const W98 = {
-    Window: (name)=>{
+    Window: (name,buttons)=>{
         let window = document.createElement("div")
         window.className = "window"
     
@@ -8,7 +8,22 @@ const W98 = {
         window.titleBarText = document.createElement("div")
         window.titleBarText.className = "title-bar-text"
         window.titleBarText.innerText = name
+        window.titleBarControls = document.createElement("div")
+        window.titleBarControls.className = "title-bar-controls"
         window.titleBar.appendChild(window.titleBarText)
+        window.titleBar.appendChild(window.titleBarControls)
+
+        if(buttons){
+            for(let buttonName of buttons) {
+                let button = document.createElement("button")
+                button.ariaLabel = buttonName
+                window.titleBarControls.appendChild(button)
+                if(buttonName == "Close") {
+                    button.onclick = () => window.remove()
+                }
+            }
+        }
+        
     
         window.body = document.createElement("div")
         window.body.className = "window-body"

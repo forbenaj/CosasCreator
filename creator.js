@@ -107,7 +107,24 @@ async function openFile(opts) {
     }
 }
 
+function isInside(item, array) {
+    for (let i = 0; i < array.length; i++) {
+        const element = array[i];
 
+        if (Array.isArray(element)) {
+            // If the current element is an array, recursively check inside it
+            if (isInside(item, element)) {
+                return true;
+            }
+        } else if (element === item) {
+            // If the current element is the item we're looking for, return true
+            return true;
+        }
+    }
+
+    // If the item is not found in the array or its sub-arrays, return false
+    return false;
+}
 
 let creator = new Creator()
 
@@ -250,7 +267,7 @@ class Treeview {
             if (item.name) {
                 let divItem = document.createElement('div');
                 divItem.classList.add("listItem")
-                divItem.ondragover = (e) => this.onDragOver(e,divItem)
+                divItem.ondragover = (e) => this.onDragOver(e,divItem,item)
                 divItem.ondragleave = (e) => this.onDragLeave(e,divItem)
 
                 
@@ -281,7 +298,8 @@ class Treeview {
                 span.draggable = true
                 span.ondragstart = (e) => this.onDrag(e,item,items)
 
-        
+                divItem.ondrop = (e) => this.onDrop(e,item,divItem)
+
                 if (item.children) {
 
                     let childrenContainer = document.createElement('div');
@@ -294,7 +312,6 @@ class Treeview {
                     button.value = item.expanded? "-":"+";
                     button.onclick = () => this.toggleExpand(item,childrenContainer,button)
                     
-                    divItem.ondrop = (e) => this.onDrop(e,item,divItem,childrenContainer)
 
                     divItem.classList.add("expandable")
                     divItem.appendChild(button)
@@ -360,9 +377,8 @@ class Treeview {
 
     openAddElementDialog(){
 
-        let newElementWindow = W98.Window("Create new element")
+        let newElementWindow = W98.Window("Create new element",["Close"])
         newElementWindow.id = "newElementWindow"
-
 
         let group = W98.Group("New element")
 
@@ -398,15 +414,22 @@ class Treeview {
             name: "",
             type: "",
             id: "",
-            image:"",
-            children:[]
+            image:""
         }
 
         for(let input of this.inputs){
             if(input.value == ""){
                 console.log("Missing "+input.id)
                 ready = false
-                break
+                
+                input.style.backgroundColor = "yellow";
+  
+                setTimeout(() => {
+                    input.style.transition = "background-color 2s";
+                    input.style.backgroundColor = "";
+                }, 500);
+
+                //break
             }
             else{
                 console.log(input.id+" ready ("+input.value+")")
@@ -426,20 +449,20 @@ class Treeview {
     }
 
     onDrag(e,item,parent){
-        //e.dataTransfer.setData("text/plain", e.target.id);
         this.dragItem = item;
         this.dragItemParent = parent;
     }
 
-    onDrop(e, item, div, childrenDiv){
+    onDrop(e, item, div){
         e.preventDefault();
         e.stopPropagation()
-        //var data = e.dataTransfer.getData("text/plain");
-        //childrenDiv.appendChild(document.getElementById(this.dragItem.id).parentElement);
-        item.children.push(this.dragItem)
+        if(item.children){
+            item.children.push(this.dragItem)
 
-        let itemIndex = this.dragItemParent.indexOf(this.dragItem)
-        this.dragItemParent.splice(itemIndex,1)
+            let itemIndex = this.dragItemParent.indexOf(this.dragItem)
+            this.dragItemParent.splice(itemIndex,1)
+        }
+        else{console.log("nochildren")}
 
         if(div.classList.contains("draggingOver")){
             div.classList.remove("draggingOver")
@@ -448,19 +471,27 @@ class Treeview {
 
     }
 
-    onDragOver(e,div){
+    onDragOver(e,div,item){
         e.preventDefault()
         e.stopPropagation();
-        //if(e.target.classList.contains("listItem")){
+        if(item.children){
             if(!div.classList.contains("draggingOver")){
                 div.classList.add("draggingOver")
             }
-        //}
+        }
+        else{
+            if(!div.classList.contains("noDraggingOver")){
+                div.classList.add("noDraggingOver")
+            }
+        }
     }
     onDragLeave(e,div){
         //if(e.target.classList.contains("listItem")){
             if(div.classList.contains("draggingOver")){
                 div.classList.remove("draggingOver")
+            }
+            if(div.classList.contains("noDraggingOver")){
+                div.classList.remove("noDraggingOver")
             }
         //}
     }

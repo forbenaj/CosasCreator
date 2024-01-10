@@ -124,3 +124,8 @@
     background-color:aliceblue;
     border: solid 1px cadetblue;
   }
+  
+  .noDraggingOver {
+    background-color:rgb(255, 240, 240);
+    border: solid 1px rgb(160, 95, 95);
+  }
