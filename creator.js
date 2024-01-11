@@ -107,22 +107,21 @@ async function openFile(opts) {
     }
 }
 
-function isInside(item, array) {
-    for (let i = 0; i < array.length; i++) {
-        const element = array[i];
-
-        if (Array.isArray(element)) {
-            // If the current element is an array, recursively check inside it
-            if (isInside(item, element)) {
+function isInside(item, parent) {
+    if(parent.children){
+        for (let i = 0; i < parent.children.length; i++) {
+            const element = parent.children[i];
+            if (element == item) {
                 return true;
             }
-        } else if (element === item) {
-            // If the current element is the item we're looking for, return true
-            return true;
+            else if (element.children) {
+                if (isInside(item, element)) {
+                    return true;
+                }
+            } 
         }
     }
 
-    // If the item is not found in the array or its sub-arrays, return false
     return false;
 }
 
@@ -242,6 +241,9 @@ class Treeview {
         this.window.body.appendChild(saveButton)
 
         this.createNestedList(this.obj,this.container)
+        this.container.ondragover = (e) => this.onDragOver(e,this.container)
+        this.container.ondragleave = (e) => this.onDragLeave(e,this.container)
+        this.container.ondrop = (e) => this.onDrop(e,this.container)
 
         this.dragItem = null
         this.dragItemParent = null
@@ -257,6 +259,9 @@ class Treeview {
         this.container = newContainer
         
         this.createNestedList(this.obj,this.container)
+        this.container.ondragover = (e) => this.onDragOver(e,this.container)
+        this.container.ondragleave = (e) => this.onDragLeave(e,this.container)
+        this.container.ondrop = (e) => this.onDrop(e,this.container)
 
         this.window.titleBarText.innerText = "Treeview - "+creator.projectName +( creator.modified? " (*)" : "")
     }
@@ -298,7 +303,7 @@ class Treeview {
                 span.draggable = true
                 span.ondragstart = (e) => this.onDrag(e,item,items)
 
-                divItem.ondrop = (e) => this.onDrop(e,item,divItem)
+                divItem.ondrop = (e) => this.onDrop(e,divItem,item)
 
                 if (item.children) {
 
@@ -437,6 +442,10 @@ class Treeview {
             }
             
         }
+
+        if(newElement.type == "room"){
+            newElement.children = []
+        }
         console.log(ready)
         if(ready){
             this.obj.push(newElement)
@@ -449,20 +458,34 @@ class Treeview {
     }
 
     onDrag(e,item,parent){
+        e.dataTransfer.effectAllowed = "copyMove";
         this.dragItem = item;
         this.dragItemParent = parent;
     }
 
-    onDrop(e, item, div){
+    onDrop(e,div,item){
         e.preventDefault();
         e.stopPropagation()
-        if(item.children){
-            item.children.push(this.dragItem)
+        if(!item){
+            this.obj.push(this.dragItem)
 
             let itemIndex = this.dragItemParent.indexOf(this.dragItem)
             this.dragItemParent.splice(itemIndex,1)
         }
-        else{console.log("nochildren")}
+        else{
+            if(item == this.dragItem){console.log("Cannot drop element inside itself!")}
+            else if(item.children){
+                if(isInside(item,this.dragItem)){console.log("Cannot drag item inside its children")}
+                else {
+                    item.children.push(this.dragItem)
+
+                    let itemIndex = this.dragItemParent.indexOf(this.dragItem)
+                    this.dragItemParent.splice(itemIndex,1)
+                }
+            }
+            else{console.log("Item has no children")}
+        }
+
 
         if(div.classList.contains("draggingOver")){
             div.classList.remove("draggingOver")
@@ -474,14 +497,27 @@ class Treeview {
     onDragOver(e,div,item){
         e.preventDefault()
         e.stopPropagation();
-        if(item.children){
+        /*if(item.children){
             if(!div.classList.contains("draggingOver")){
                 div.classList.add("draggingOver")
             }
         }
         else{
+            //e.dataTransfer.dropEffect = "none";
             if(!div.classList.contains("noDraggingOver")){
                 div.classList.add("noDraggingOver")
+            }
+        }*/
+        
+        if(item && (item == this.dragItem || !item.children || isInside(item,this.dragItem))){
+            e.dataTransfer.dropEffect = "none";
+            if(!div.classList.contains("noDraggingOver")){
+                div.classList.add("noDraggingOver")
+            }
+        }
+        else{
+            if(!div.classList.contains("draggingOver")){
+                div.classList.add("draggingOver")
             }
         }
     }
@@ -524,7 +560,7 @@ class Treeview {
         try{
             await saveFile(blob,opts)
             creator.modified = false
-            treeview.reload()
+            this.reload()
         }
         catch(error){console.log(error)}
 
@@ -569,9 +605,13 @@ class Treeview {
         };
         try{
             let file = await openFile(opts)
-            const jsonObject = JSON.parse(file);
+            let contents = await file.text()
+            const jsonObject = JSON.parse(contents);
 
-            console.log("Parsed JSON object:", jsonObject);
+            rooms = jsonObject
+            this.obj = rooms
+
+            this.reload()
         }
         catch(error){console.log(error)}
         /*let fileHandle
