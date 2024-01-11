@@ -53,10 +53,6 @@
     overflow-y: auto;
   }
 
-  .treeviewContainer div {
-    margin: 5px;
-  }
-
   
   /* Style the caret/arrow */
   .itemTitle {
@@ -75,11 +71,14 @@
   }
 
   .listItem {
-    padding-left: 32px;
+    padding-left: 38px;
+    margin:0px;
+    padding-top:2px;
+    padding-bottom:2px;
   }
 
   .expandable {
-    padding-left: 16px;
+    padding-left: 20px;
 
   }
 

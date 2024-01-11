@@ -84,12 +84,12 @@ async function saveFile(blob,opts){
 
 async function openFile(opts) {
     if (window.showOpenFilePicker) {
-        console.log("new method")
+        console.log("Opening file by new method")
         const [fileHandle] = await showOpenFilePicker(opts);
         const file = await fileHandle.getFile();
         return file;
     } else {
-        console.log("legacy method")
+        console.log("Opening file by legacy method")
         return new Promise((resolve, reject) => {
             const input = document.createElement("input");
             input.type = "file";
@@ -221,7 +221,7 @@ class Treeview {
 
         let addButton = document.createElement("button")
         addButton.innerText = "Add element"
-        addButton.onclick = ()=>this.openAddElementDialog()
+        addButton.onclick = ()=>this.openAddElementDialog(this.obj)
         this.inputs = []
 
         this.container = document.createElement('div')
@@ -286,7 +286,7 @@ class Treeview {
                 span.context= {
                     items:[
                         {name:"Inspect",class:"bold-item", action: ()=>this.openElement(item)},
-                        {name:"Add Child",class:"", action: ()=>console.log("Add Child")},
+                        {name:"Add Child",class:"", action: ()=>this.openAddElementDialog(item.children)},
                         {name:"",class:"divider", action: ()=>console.log("divider")},
                         {name:"Disabled",class:"disabled", action: ()=>console.log("Disabled")},
                         {name:"Delete",class:"", action: ()=>console.log("Delete")}
@@ -355,7 +355,7 @@ class Treeview {
         element.classList.add("openedElement")
         
         if(item.type == "room") {
-            viewer.goTo(item.id)
+            viewer.goTo(item)
         }
 
         inspector.inspect(item)
@@ -380,7 +380,7 @@ class Treeview {
         
     }
 
-    openAddElementDialog(){
+    openAddElementDialog(parent){
 
         let newElementWindow = W98.Window("Create new element",["Close"])
         newElementWindow.id = "newElementWindow"
@@ -401,7 +401,7 @@ class Treeview {
 
         let saveButton = document.createElement("button")
         saveButton.innerText = "Save"
-        saveButton.onclick = ()=>this.addElement()
+        saveButton.onclick = ()=>this.addElement(parent)
 
         group.appendChild(typeContainer)
         group.appendChild(nameContainer)
@@ -413,7 +413,7 @@ class Treeview {
         document.body.appendChild(newElementWindow)
     }
     
-    addElement(){
+    addElement(parent){
         let ready = true;
         let newElement = {
             name: "",
@@ -448,7 +448,7 @@ class Treeview {
         }
         console.log(ready)
         if(ready){
-            this.obj.push(newElement)
+            parent.push(newElement)
             this.reload()
             //viewer.reload()
 
@@ -762,11 +762,11 @@ class Viewer {
         this.window.body.style.backgroundImage = "url("+src+")"
     }
 
-    goTo(roomId){
+    goTo(item){
 
-        let newRoom = rooms.find(room => room.id === roomId);
+        //let newRoom = rooms.find(room => room.id === roomId);
         
-        this.currentRoom=newRoom;
+        this.currentRoom=item;
 
         this.reload()
     }
